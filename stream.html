@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Lionime - Stream</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .header {
+            background-color: #2c2c2c;
+            padding: 10px 0;
+            text-align: center;
+            border-bottom: 2px solid #ff6b6b;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #ff6b6b;
+        }
+
+        .back-button {
+            margin-bottom: 20px;
+        }
+
+        .back-button a {
+            color: #ff6b6b;
+            text-decoration: none;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 56.25%; /* Rasio 16:9 */
+        }
+
+        .video-container video,
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-title {
+            margin: 10px 0;
+            color: #ff6b6b;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>Lionime</h1>
+    </div>
+
+    <!-- Container Utama -->
+    <div class="container" id="main-container">
+        <div class="loading">Menyiapkan video...</div>
+    </div>
+
+    <script>
+        // Ambil episodeId dari URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const episodeId = urlParams.get('id');
+
+        if (!episodeId) {
+            document.getElementById('main-container').innerHTML = '<p>ID Episode tidak ditemukan.</p>';
+        } else {
+            loadVideo(episodeId);
+        }
+
+        async function loadVideo(id) {
+            const container = document.getElementById('main-container');
+
+            try {
+                // Langkah 1: Ambil info episode (termasuk serverId) dari wajik-anime-api
+                const episodeResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/episode/${id}`);
+                const episodeData = await episodeResponse.json();
+
+                if (!episodeData.data || !episodeData.data.servers || episodeData.data.servers.length === 0) {
+                    container.innerHTML = '<p>Tidak ada server streaming yang tersedia.</p>';
+                    return;
+                }
+
+                // Ambil server pertama sebagai contoh
+                const serverId = episodeData.data.servers[0].id; // Ambil ID server dari data episode
+                const episodeTitle = episodeData.data.title || `Episode ${id}`; // Gunakan judul dari API jika tersedia
+
+                // Langkah 2: Ambil URL video dari server
+                const serverResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/server/${serverId}`);
+                const serverData = await serverResponse.json();
+
+                if (!serverData.data || !serverData.data.url) {
+                    container.innerHTML = '<p>Tidak dapat mengambil URL video.</p>';
+                    return;
+                }
+
+                const videoUrl = serverData.data.url; // Ini adalah URL video atau iframe src
+
+                document.getElementById('page-title').textContent = `${episodeTitle} - Lionime`;
+
+                container.innerHTML = `
+                    <div class="back-button">
+                        <a href="episode.html?title=${encodeURIComponent(episodeData.data.animeTitle)}">&larr; Kembali ke Daftar Episode</a>
+                    </div>
+                    <h2 class="video-title">${episodeTitle}</h2>
+                    <div class="video-container">
+                        <iframe src="${videoUrl}" frameborder="0" allowfullscreen></iframe>
+                    </div>
+                `;
+
+            } catch (error) {
+                container.innerHTML = `<p>Terjadi kesalahan saat memuat video: ${error.message}</p>`;
+            }
+        }
+    </script>
+
+</body>
+</html>

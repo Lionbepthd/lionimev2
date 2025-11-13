@@ -260,7 +260,7 @@
                 data.data.forEach(anime => {
                     const card = document.createElement('div');
                     card.className = 'anime-card';
-                    card.onclick = () => showAnimeDetail(anime.mal_id); // Panggil fungsi showAnimeDetail
+                    card.onclick = () => window.location.href = `anime-detail.html?id=${anime.mal_id}`;
 
                     const genres = anime.genres.map(g => g.name).slice(0, 2).join(', ');
 
@@ -276,53 +276,6 @@
                 });
             } catch (error) {
                 genreListElement.innerHTML = `<p>Terjadi kesalahan saat memuat anime: ${error.message}</p>`;
-            }
-        }
-
-        // Fungsi untuk menampilkan detail anime di halaman yang sama
-        async function showAnimeDetail(malId) {
-            const container = document.querySelector('.container');
-            container.innerHTML = '<div class="loading">Memuat detail anime...</div>';
-
-            try {
-                const response = await fetch(`https://api.jikan.moe/v4/anime/${malId}`);
-                const data = await response.json();
-                const anime = data.data;
-
-                // Format informasi
-                const title = anime.title;
-                const imageUrl = anime.images.jpg.image_url;
-                const episodes = anime.episodes || 'Tidak Diketahui';
-                const status = anime.status;
-                const aired = anime.aired.string;
-                const genres = anime.genres.map(g => g.name).join(', ');
-                const score = anime.score;
-                const synopsis = anime.synopsis || 'Synopsis tidak tersedia.';
-
-                container.innerHTML = `
-                    <div class="back-button">
-                        <a href="#" onclick="history.back(); return false;">&larr; Kembali ke Daftar</a>
-                    </div>
-                    <div class="anime-detail">
-                        <div class="anime-image">
-                            <img src="${imageUrl}" alt="${title}">
-                        </div>
-                        <div class="anime-info">
-                            <h1>${title}</h1>
-                            <p><strong>Episode:</strong> ${episodes}</p>
-                            <p><strong>Status:</strong> ${status}</p>
-                            <p><strong>Tanggal Rilis:</strong> ${aired}</p>
-                            <p><strong>Genre:</strong> ${genres}</p>
-                            <p><strong>Skor:</strong> ${score}</p>
-                            <div class="synopsis">
-                                <h3>Sinopsis:</h3>
-                                <p>${synopsis}</p>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            } catch (error) {
-                container.innerHTML = `<p>Terjadi kesalahan saat memuat detail anime: ${error.message}</p>`;
             }
         }
 

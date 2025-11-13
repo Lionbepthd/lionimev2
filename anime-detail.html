@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jadwal Anime - Lionime</title>
+    <title id="page-title">Lionime</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -63,62 +63,6 @@
             font-size: 12px;
         }
 
-        .anime-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .anime-card {
-            background-color: #2c2c2c;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            transition: transform 0.3s;
-        }
-
-        .anime-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .anime-card img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-        }
-
-        .anime-info {
-            padding: 10px;
-        }
-
-        .anime-info h3 {
-            margin: 0 0 5px 0;
-            font-size: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .anime-info p {
-            margin: 0;
-            font-size: 12px;
-            color: #aaa;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #aaa;
-        }
-
-        .section-title {
-            margin-top: 30px;
-            margin-bottom: 10px;
-            color: #ff6b6b;
-        }
-
-        /* Detail Anime */
         .back-button {
             margin-bottom: 20px;
         }
@@ -161,6 +105,24 @@
             margin-top: 20px;
             line-height: 1.6;
         }
+
+        .watch-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #ff6b6b;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #aaa;
+        }
     </style>
 </head>
 <body>
@@ -171,11 +133,8 @@
     </div>
 
     <!-- Container Utama -->
-    <div class="container">
-        <h2 class="section-title">Jadwal Rilis: Senin</h2>
-        <div id="schedule-list" class="anime-grid">
-            <div class="loading">Memuat...</div>
-        </div>
+    <div class="container" id="main-container">
+        <div class="loading">Memuat detail anime...</div>
     </div>
 
     <!-- Navigasi Bawah -->
@@ -199,39 +158,64 @@
     </div>
 
     <script>
-        async function loadSchedule() {
-            const scheduleListElement = document.getElementById('schedule-list');
-            scheduleListElement.innerHTML = '<div class="loading">Memuat Jadwal...</div>';
+        // Ambil ID dari URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const malId = urlParams.get('id');
 
-            try {
-                const response = await fetch('https://api.jikan.moe/v4/schedules?filter=monday&limit=20');
-                const data = await response.json();
-
-                scheduleListElement.innerHTML = '';
-
-                data.data.forEach(anime => {
-                    const card = document.createElement('div');
-                    card.className = 'anime-card';
-                    card.onclick = () => window.location.href = `anime-detail.html?id=${anime.mal_id}`;
-
-                    const genres = anime.genres.map(g => g.name).slice(0, 2).join(', ');
-
-                    card.innerHTML = `
-                        <img src="${anime.images.jpg.image_url}" alt="${anime.title}">
-                        <div class="anime-info">
-                            <h3>${anime.title}</h3>
-                            <p>${genres || 'Genre Tidak Tersedia'}</p>
-                        </div>
-                    `;
-
-                    scheduleListElement.appendChild(card);
-                });
-            } catch (error) {
-                scheduleListElement.innerHTML = `<p>Terjadi kesalahan saat memuat jadwal: ${error.message}</p>`;
-            }
+        if (!malId) {
+            document.getElementById('main-container').innerHTML = '<p>ID Anime tidak ditemukan.</p>';
+        } else {
+            loadAnimeDetail(malId);
         }
 
-        window.onload = loadSchedule;
+        async function loadAnimeDetail(id) {
+            const container = document.getElementById('main-container');
+
+            try {
+                // Ambil detail dari Jikan
+                const jikanResponse = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
+                const jikanData = await jikanResponse.json();
+                const anime = jikanData.data;
+
+                // Format informasi
+                const title = anime.title;
+                const imageUrl = anime.images.jpg.image_url;
+                const episodes = anime.episodes || 'Tidak Diketahui';
+                const status = anime.status;
+                const aired = anime.aired.string;
+                const genres = anime.genres.map(g => g.name).join(', ');
+                const score = anime.score;
+                const synopsis = anime.synopsis || 'Synopsis tidak tersedia.';
+
+                document.getElementById('page-title').textContent = `${title} - Lionime`;
+
+                container.innerHTML = `
+                    <div class="back-button">
+                        <a href="javascript:history.back()">&larr; Kembali</a>
+                    </div>
+                    <div class="anime-detail">
+                        <div class="anime-image">
+                            <img src="${imageUrl}" alt="${title}">
+                        </div>
+                        <div class="anime-info">
+                            <h1>${title}</h1>
+                            <p><strong>Episode:</strong> ${episodes}</p>
+                            <p><strong>Status:</strong> ${status}</p>
+                            <p><strong>Tanggal Rilis:</strong> ${aired}</p>
+                            <p><strong>Genre:</strong> ${genres}</p>
+                            <p><strong>Skor:</strong> ${score}</p>
+                            <div class="synopsis">
+                                <h3>Sinopsis:</h3>
+                                <p>${synopsis}</p>
+                            </div>
+                            <a href="episode.html?title=${encodeURIComponent(title)}" class="watch-button">Tonton Semua Episode</a>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<p>Terjadi kesalahan saat memuat detail anime: ${error.message}</p>`;
+            }
+        }
     </script>
 
 </body>
