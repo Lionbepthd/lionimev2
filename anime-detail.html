@@ -158,33 +158,40 @@
     </div>
 
     <script>
-        // Ambil ID dari URL
+        // Ambil ID (slug) dari URL
         const urlParams = new URLSearchParams(window.location.search);
-        const malId = urlParams.get('id');
+        const animeSlug = urlParams.get('id');
 
-        if (!malId) {
+        if (!animeSlug) {
             document.getElementById('main-container').innerHTML = '<p>ID Anime tidak ditemukan.</p>';
         } else {
-            loadAnimeDetail(malId);
+            loadAnimeDetail(animeSlug);
         }
 
-        async function loadAnimeDetail(id) {
+        async function loadAnimeDetail(slug) {
             const container = document.getElementById('main-container');
 
             try {
-                // Ambil detail dari Jikan
-                const jikanResponse = await fetch(`https://api.jikan.moe/v4/anime/${id}`);
-                const jikanData = await jikanResponse.json();
-                const anime = jikanData.data;
+                // Ambil detail dari API baru
+                const response = await fetch(`https://www.sankavollerei.com/anime/samehadaku/anime/${slug}`);
+                const data = await response.json();
+
+                // Pastikan data ada
+                if (!data.data) {
+                    container.innerHTML = '<p>Detail anime tidak ditemukan.</p>';
+                    return;
+                }
+
+                const anime = data.data;
 
                 // Format informasi
                 const title = anime.title;
-                const imageUrl = anime.images.jpg.image_url;
+                const imageUrl = anime.image || 'https://via.placeholder.com/300x400'; // Gambar placeholder jika tidak ada
                 const episodes = anime.episodes || 'Tidak Diketahui';
-                const status = anime.status;
-                const aired = anime.aired.string;
-                const genres = anime.genres.map(g => g.name).join(', ');
-                const score = anime.score;
+                const status = anime.status || 'Status Tidak Diketahui';
+                const aired = anime.aired || 'Tanggal Rilis Tidak Diketahui';
+                const genres = anime.genres ? anime.genres.join(', ') : 'Genre Tidak Tersedia';
+                const score = anime.score || 'Skor Tidak Tersedia';
                 const synopsis = anime.synopsis || 'Synopsis tidak tersedia.';
 
                 document.getElementById('page-title').textContent = `${title} - Lionime`;
@@ -208,7 +215,7 @@
                                 <h3>Sinopsis:</h3>
                                 <p>${synopsis}</p>
                             </div>
-                            <a href="episode.html?title=${encodeURIComponent(title)}" class="watch-button">Tonton Semua Episode</a>
+                            <a href="episode.html?id=${encodeURIComponent(slug)}" class="watch-button">Tonton Semua Episode</a>
                         </div>
                     </div>
                 `;

@@ -152,73 +152,43 @@
     </div>
 
     <script>
-        // Ambil judul dari URL
+        // Ambil ID (slug) dari URL
         const urlParams = new URLSearchParams(window.location.search);
-        const animeTitle = urlParams.get('title');
+        const animeSlug = urlParams.get('id');
 
-        if (!animeTitle) {
-            document.getElementById('main-container').innerHTML = '<p>Judul Anime tidak ditemukan.</p>';
+        if (!animeSlug) {
+            document.getElementById('main-container').innerHTML = '<p>ID Anime tidak ditemukan.</p>';
         } else {
-            loadEpisodes(animeTitle);
+            loadEpisodes(animeSlug);
         }
 
-        // Fungsi untuk membuat slug dari judul
-        function createSlug(title) {
-            return title
-                .toLowerCase() // ubah ke huruf kecil
-                .replace(/\s+/g, '-') // ganti spasi dengan -
-                .replace(/[^a-z0-9-]/g, '') // hapus karakter non-alphanumeric dan non-dash
-                .trim(); // hapus spasi di awal/akhir
-        }
-
-        async function loadEpisodes(title) {
+        async function loadEpisodes(slug) {
             const container = document.getElementById('main-container');
 
             try {
-                // Coba cari dengan judul asli dulu
-                let searchResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/search?q=${encodeURIComponent(title)}`);
-                let searchData = await searchResponse.json();
+                // Ambil detail anime (termasuk daftar episode) dari API baru
+                const response = await fetch(`https://www.sankavollerei.com/anime/samehadaku/anime/${slug}`);
+                const data = await response.json();
 
-                // Jika tidak ditemukan, coba dengan slug
-                if (!searchData.data || searchData.data.length === 0) {
-                    const slug = createSlug(title);
-                    console.log("Pencarian pertama gagal, mencoba dengan slug:", slug);
-                    searchResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/search?q=${encodeURIComponent(slug)}`);
-                    searchData = await searchResponse.json();
-                }
-
-                // Ambil anime pertama dari hasil pencarian
-                if (!searchData.data || searchData.data.length === 0) {
-                    container.innerHTML = `<p>Tidak ditemukan anime "${title}" di database streaming.</p>`;
+                if (!data.data || !data.data.episodes) {
+                    container.innerHTML = `<p>Daftar episode untuk "${slug}" tidak ditemukan.</p>`;
                     return;
                 }
 
-                const animeInfo = searchData.data[0];
-                const animeId = animeInfo.animeId; // Ambil animeId dari hasil pencarian
-
-                // Langkah 2: Ambil detail anime (termasuk daftar episode) dari wajik-anime-api
-                const detailResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/anime/${animeId}`);
-                const detailData = await detailResponse.json();
-
-                if (!detailData.data || !detailData.data.episodes) {
-                    container.innerHTML = `<p>Daftar episode untuk "${title}" tidak ditemukan.</p>`;
-                    return;
-                }
-
-                const episodes = detailData.data.episodes;
+                const episodes = data.data.episodes;
 
                 container.innerHTML = `
                     <div class="back-button">
-                        <a href="anime-detail.html?id=${detailData.data.mal_id || ''}">&larr; Kembali ke Detail</a> <!-- Kembali ke detail Jikan jika memungkinkan -->
+                        <a href="anime-detail.html?id=${encodeURIComponent(slug)}">&larr; Kembali ke Detail</a>
                     </div>
-                    <h2 class="section-title">Daftar Episode: ${title}</h2>
+                    <h2 class="section-title">Daftar Episode: ${data.data.title}</h2>
                     <div class="episode-list">
                 `;
 
                 episodes.forEach(ep => {
                     // ep.id adalah episodeId yang dibutuhkan untuk /episode/{episodeId}
                     const epNum = ep.title; // Gunakan title atau episode number jika tersedia
-                    const episodeId = ep.id; // Ini adalah ID yang benar dari wajik-anime-api
+                    const episodeId = ep.id; // Ini adalah ID yang benar dari API baru
 
                     container.innerHTML += `
                         <a href="stream.html?id=${encodeURIComponent(episodeId)}" class="episode-item">

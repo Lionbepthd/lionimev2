@@ -225,55 +225,65 @@
             genreButtonsElement.innerHTML = '<div class="loading">Memuat Opsi Genre...</div>';
 
             try {
-                const response = await fetch('https://api.jikan.moe/v4/genres/anime');
+                const response = await fetch('https://www.sankavollerei.com/anime/samehadaku/genres');
                 const data = await response.json();
 
                 genreButtonsElement.innerHTML = '';
 
-                data.data.forEach(genre => {
-                    const button = document.createElement('button');
-                    button.textContent = genre.name;
-                    button.className = 'genre-button';
-                    button.onclick = () => loadAnimeByGenre(genre.mal_id, genre.name);
+                // Asumsikan data dalam bentuk array di data.data
+                if (data.data && Array.isArray(data.data)) {
+                    data.data.forEach(genre => {
+                        const button = document.createElement('button');
+                        button.textContent = genre.name;
+                        button.className = 'genre-button';
+                        button.onclick = () => loadAnimeByGenre(genre.slug); // Gunakan slug genre
 
-                    genreButtonsElement.appendChild(button);
-                });
+                        genreButtonsElement.appendChild(button);
+                    });
+                } else {
+                    genreButtonsElement.innerHTML = '<p>Tidak ada genre yang tersedia.</p>';
+                }
             } catch (error) {
                 genreButtonsElement.innerHTML = `<p>Terjadi kesalahan saat memuat genre: ${error.message}</p>`;
             }
         }
 
-        async function loadAnimeByGenre(genreId, genreName) {
+        async function loadAnimeByGenre(genreSlug) {
             const genreListElement = document.getElementById('genre-list');
             const genreTitleElement = document.getElementById('genre-title');
 
             genreListElement.innerHTML = '<div class="loading">Memuat...</div>';
-            genreTitleElement.textContent = `Anime Genre: ${genreName}`;
+            genreTitleElement.textContent = `Anime Genre: ${genreSlug}`;
             genreTitleElement.style.display = 'block';
 
             try {
-                const response = await fetch(`https://api.jikan.moe/v4/anime?genres=${genreId}&order_by=members&sort=desc&limit=20`);
+                const response = await fetch(`https://www.sankavollerei.com/anime/samehadaku/genres/${genreSlug}?page=1`);
                 const data = await response.json();
 
                 genreListElement.innerHTML = '';
 
-                data.data.forEach(anime => {
-                    const card = document.createElement('div');
-                    card.className = 'anime-card';
-                    card.onclick = () => window.location.href = `anime-detail.html?id=${anime.mal_id}`;
+                // Asumsikan data dalam bentuk array di data.data
+                if (data.data && Array.isArray(data.data)) {
+                    data.data.forEach(anime => {
+                        const card = document.createElement('div');
+                        card.className = 'anime-card';
+                        card.onclick = () => window.location.href = `anime-detail.html?id=${encodeURIComponent(anime.slug)}`;
 
-                    const genres = anime.genres.map(g => g.name).slice(0, 2).join(', ');
+                        const genres = anime.genres ? anime.genres.join(', ') : 'Genre Tidak Tersedia';
 
-                    card.innerHTML = `
-                        <img src="${anime.images.jpg.image_url}" alt="${anime.title}">
-                        <div class="anime-info">
-                            <h3>${anime.title}</h3>
-                            <p>${genres || 'Genre Tidak Tersedia'}</p>
-                        </div>
-                    `;
+                        card.innerHTML = `
+                            <img src="${anime.image}" alt="${anime.title}">
+                            <div class="anime-info">
+                                <h3>${anime.title}</h3>
+                                <p>${genres}</p>
+                            </div>
+                        `;
 
-                    genreListElement.appendChild(card);
-                });
+                        genreListElement.appendChild(card);
+                    });
+                } else {
+                    genreListElement.innerHTML = '<p>Tidak ada anime untuk genre ini.</p>';
+                }
             } catch (error) {
                 genreListElement.innerHTML = `<p>Terjadi kesalahan saat memuat anime: ${error.message}</p>`;
             }

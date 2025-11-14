@@ -96,8 +96,8 @@
             const container = document.getElementById('main-container');
 
             try {
-                // Langkah 1: Ambil info episode (termasuk serverId) dari wajik-anime-api
-                const episodeResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/episode/${id}`);
+                // Langkah 1: Ambil info episode (termasuk serverId) dari API baru
+                const episodeResponse = await fetch(`https://www.sankavollerei.com/anime/samehadaku/episode/${id}`);
                 const episodeData = await episodeResponse.json();
 
                 if (!episodeData.data || !episodeData.data.servers || episodeData.data.servers.length === 0) {
@@ -110,7 +110,7 @@
                 const episodeTitle = episodeData.data.title || `Episode ${id}`; // Gunakan judul dari API jika tersedia
 
                 // Langkah 2: Ambil URL video dari server
-                const serverResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/server/${serverId}`);
+                const serverResponse = await fetch(`https://www.sankavollerei.com/anime/samehadaku/server/${serverId}`);
                 const serverData = await serverResponse.json();
 
                 if (!serverData.data || !serverData.data.url) {
@@ -124,7 +124,7 @@
 
                 container.innerHTML = `
                     <div class="back-button">
-                        <a href="episode.html?title=${encodeURIComponent(episodeData.data.animeTitle)}">&larr; Kembali ke Daftar Episode</a>
+                        <a href="episode.html?id=${encodeURIComponent(episodeData.data.animeId)}">&larr; Kembali ke Daftar Episode</a>
                     </div>
                     <h2 class="video-title">${episodeTitle}</h2>
                     <div class="video-container">
