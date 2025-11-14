@@ -162,13 +162,30 @@
             loadEpisodes(animeTitle);
         }
 
+        // Fungsi untuk membuat slug dari judul
+        function createSlug(title) {
+            return title
+                .toLowerCase() // ubah ke huruf kecil
+                .replace(/\s+/g, '-') // ganti spasi dengan -
+                .replace(/[^a-z0-9-]/g, '') // hapus karakter non-alphanumeric dan non-dash
+                .trim(); // hapus spasi di awal/akhir
+        }
+
         async function loadEpisodes(title) {
             const container = document.getElementById('main-container');
 
             try {
-                // Langkah 1: Cari anime di wajik-anime-api berdasarkan judul
-                const searchResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/search?q=${encodeURIComponent(title)}`);
-                const searchData = await searchResponse.json();
+                // Coba cari dengan judul asli dulu
+                let searchResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/search?q=${encodeURIComponent(title)}`);
+                let searchData = await searchResponse.json();
+
+                // Jika tidak ditemukan, coba dengan slug
+                if (!searchData.data || searchData.data.length === 0) {
+                    const slug = createSlug(title);
+                    console.log("Pencarian pertama gagal, mencoba dengan slug:", slug);
+                    searchResponse = await fetch(`https://wajik-anime-api.vercel.app/samehadaku/search?q=${encodeURIComponent(slug)}`);
+                    searchData = await searchResponse.json();
+                }
 
                 // Ambil anime pertama dari hasil pencarian
                 if (!searchData.data || searchData.data.length === 0) {
