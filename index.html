@@ -1,62 +1,272 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Coming Soon — LIONIME</title>
-  <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      font-family: 'Inter', sans-serif;
-      color: #e2e8f0;
-      text-align: center;
-      padding: 20px;
-    }
-    .box {
-      max-width: 500px;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 40px 30px;
-      border-radius: 20px;
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255,255,255,0.08);
-      box-shadow: 0 0 25px rgba(0,0,0,0.4);
-    }
-    h1 {
-      font-size: 34px;
-      margin-bottom: 10px;
-      background: linear-gradient(90deg, #ff9a3c, #ff5c7a);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    p {
-      margin: 0;
-      font-size: 16px;
-      color: #94a3b8;
-    }
-    .loader {
-      margin: 25px auto 0;
-      width: 45px;
-      height: 45px;
-      border: 4px solid #fff3;
-      border-top: 4px solid #ffb547;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lionime (Novel)</title>
+    <style>
+        :root {
+            --primary: #d32f2f;
+            --dark: #121212;
+            --light: #f5f5f5;
+            --gray: #333;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark);
+            color: var(--light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        header {
+            background-color: black;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+        }
+        h1 {
+            color: var(--primary);
+            margin: 0;
+        }
+        .search-container {
+            display: flex;
+            margin: 20px;
+        }
+        #searchInput {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            background-color: var(--gray);
+            color: var(--light);
+            border: 1px solid var(--primary);
+            border-radius: 4px 0 0 4px;
+        }
+        #searchBtn {
+            padding: 12px 20px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 0 4px 4px 0;
+        }
+        .section {
+            margin: 20px 20px 40px 20px;
+        }
+        .section h2 {
+            color: var(--primary);
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .novel-list {
+            display: flex;
+            overflow-x: auto;
+            gap: 15px;
+            padding: 10px 0;
+        }
+        .novel-card {
+            min-width: 120px;
+            background-color: var(--gray);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+        .novel-card:hover {
+            transform: scale(1.05);
+        }
+        .novel-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+        }
+        .novel-card .title {
+            padding: 8px;
+            font-size: 14px;
+        }
+        .genre-list {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .genre-btn {
+            padding: 8px 16px;
+            background-color: var(--gray);
+            color: var(--light);
+            border: 1px solid var(--primary);
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        .genre-btn:hover {
+            background-color: var(--primary);
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
 </head>
 <body>
-  <div class="box">
-    <h1>Coming Soon</h1>
-    <p>LIONIME (KOMIK) sedang dipersiapkan. Nantikan update berikutnya!</p>
-    <div class="loader"></div>
-  </div>
+
+    <header>
+        <h1>Lionime (Novel)</h1>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" placeholder="Cari novel...">
+        <button id="searchBtn">Cari</button>
+    </div>
+
+    <div class="section">
+        <h2>🔥 Novel Terlaris</h2>
+        <div id="hotNovels" class="novel-list"></div>
+    </div>
+
+    <div id="dynamicSections"></div> <!-- Bagian yang diisi secara dinamis dari API /home -->
+
+    <div class="section hidden" id="genreResultsSection">
+        <h2>Hasil Genre</h2>
+        <div id="genreResults" class="novel-list"></div>
+    </div>
+
+    <div class="section hidden" id="searchResultsSection">
+        <h2>Hasil Pencarian</h2>
+        <div id="searchResults" class="novel-list"></div>
+    </div>
+
+    <div class="section">
+        <h2>🎭 Genre</h2>
+        <div id="genreList" class="genre-list"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://www.sankavollerei.com/novel';
+
+        async function fetchData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (e) {
+                console.error("Fetch error:", e);
+                return null;
+            }
+        }
+
+        function createNovelCard(novel) {
+            const card = document.createElement('div');
+            card.className = 'novel-card';
+            card.onclick = () => window.location.href = `read.html?id=${novel.novelId}`;
+            card.innerHTML = `
+                <img src="${novel.cover?.url || 'https://placehold.co/120x160?text=Cover'}" alt="${novel.title}">
+                <div class="title">${novel.title}</div>
+            `;
+            return card;
+        }
+
+        function displayNovels(containerId, novels) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (novels && novels.length > 0) {
+                novels.forEach(novel => {
+                    container.appendChild(createNovelCard(novel));
+                });
+            } else {
+                container.innerHTML = '<p>Belum ada data.</p>';
+            }
+        }
+
+        async function loadHotSearch() {
+            const data = await fetchData(`${API_BASE}/hot-search`);
+            if (data && data.result && data.result.items) {
+                displayNovels('hotNovels', data.result.items);
+            } else {
+                document.getElementById('hotNovels').innerHTML = '<p>Belum ada data dari pencarian terlaris.</p>';
+            }
+        }
+
+        async function loadHomeData() {
+            const data = await fetchData(`${API_BASE}/home`);
+            const sectionsContainer = document.getElementById('dynamicSections');
+
+            if (data && data.result && data.result.items) {
+                data.result.items.forEach(item => {
+                    if (item.type === 'ContentList' && item.contents && item.contents.length > 0) {
+                        const section = document.createElement('div');
+                        section.className = 'section';
+                        section.innerHTML = `<h2>${item.title}</h2><div class="novel-list" id="list-${item.title.replace(/\s+/g, '-')}"></div>`;
+                        sectionsContainer.appendChild(section);
+
+                        displayNovels(`list-${item.title.replace(/\s+/g, '-')}`, item.contents);
+                    }
+                });
+            } else {
+                sectionsContainer.innerHTML = '<p>Belum ada data dari beranda.</p>';
+            }
+        }
+
+        // Fungsi untuk memuat daftar genre dari API
+        async function loadGenres() {
+            const data = await fetchData(`${API_BASE}/genre/2`); // Ambil dari salah satu endpoint untuk melihat daftar genre
+            const container = document.getElementById('genreList');
+            container.innerHTML = '';
+
+            if (data && data.result && data.result.genres) {
+                data.result.genres.forEach(genre => {
+                    const btn = document.createElement('button');
+                    btn.className = 'genre-btn';
+                    btn.textContent = genre.name;
+                    btn.onclick = () => loadNovelsByGenre(genre.genreId);
+                    container.appendChild(btn);
+                });
+            } else {
+                container.innerHTML = '<p>Belum ada genre yang tersedia.</p>';
+            }
+        }
+
+        // Fungsi untuk memuat novel berdasarkan genre
+        async function loadNovelsByGenre(genreId) {
+            const data = await fetchData(`${API_BASE}/genre/${genreId}`);
+            if (data && data.result && data.result.items) {
+                displayNovels('genreResults', data.result.items);
+                document.getElementById('genreResultsSection').classList.remove('hidden');
+                document.getElementById('searchResultsSection').classList.add('hidden');
+            } else {
+                document.getElementById('genreResults').innerHTML = '<p>Belum ada novel untuk genre ini.</p>';
+                document.getElementById('genreResultsSection').classList.remove('hidden');
+                document.getElementById('searchResultsSection').classList.add('hidden');
+            }
+        }
+
+        async function searchNovels() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            const data = await fetchData(`${API_BASE}/search?q=${encodeURIComponent(query)}`);
+            if (data && data.result && data.result.items) {
+                displayNovels('searchResults', data.result.items);
+                document.getElementById('searchResultsSection').classList.remove('hidden');
+                document.getElementById('genreResultsSection').classList.add('hidden');
+            } else {
+                document.getElementById('searchResults').innerHTML = '<p>Tidak ditemukan hasil untuk pencarian ini.</p>';
+                document.getElementById('searchResultsSection').classList.remove('hidden');
+                document.getElementById('genreResultsSection').classList.add('hidden');
+            }
+        }
+
+        window.onload = async () => {
+            await loadHotSearch();
+            await loadHomeData();
+            await loadGenres();
+
+            document.getElementById('searchBtn').addEventListener('click', searchNovels);
+            document.getElementById('searchInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') searchNovels();
+            });
+        };
+
+    </script>
+
 </body>
 </html>

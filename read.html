@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Baca Novel - Lionime</title>
+    <style>
+        :root {
+            --primary: #d32f2f;
+            --dark: #121212;
+            --light: #f5f5f5;
+            --gray: #333;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--dark);
+            color: var(--light);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+        }
+        header {
+            background-color: black;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--primary);
+        }
+        h1 {
+            color: var(--primary);
+            margin: 0;
+            font-size: 1.2em;
+        }
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .chapter-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .chapter-title {
+            font-size: 1.8em;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .content {
+            background-color: var(--gray);
+            padding: 25px;
+            border-radius: 8px;
+            min-height: 50vh;
+            white-space: pre-wrap; /* Untuk memformat teks .txt */
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+        }
+        .chapter-list {
+            background-color: var(--gray);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        .chapter-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        .chapter-list li {
+            padding: 8px;
+            border-bottom: 1px solid #555;
+        }
+        .chapter-list a {
+            display: block;
+            padding: 5px;
+            color: var(--light);
+        }
+        .chapter-list a:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><a href="index.html">Lionime (Novel)</a></h1>
+    </header>
+
+    <div class="container">
+        <div class="chapter-nav">
+            <a href="#" id="prevLink"><< Bab Sebelumnya</a>
+            <a href="#" id="listLink">Daftar Bab</a>
+            <a href="#" id="nextLink">Bab Selanjutnya >></a>
+        </div>
+
+        <h2 id="chapterTitle" class="chapter-title">Memuat...</h2>
+
+        <div id="content" class="content">
+            <div class="loading">Mengambil konten bab...</div>
+        </div>
+
+        <div id="chapterList" class="chapter-list" style="display: none;">
+            <h3>Daftar Bab</h3>
+            <ul id="chapterListUl"></ul>
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = 'https://www.sankavollerei.com/novel';
+        const urlParams = new URLSearchParams(window.location.search);
+        const novelId = urlParams.get('id');
+        let currentChapterId = urlParams.get('chapter'); // Bisa kosong
+        let currentChapterSequel = parseInt(urlParams.get('sequel')) || 1; // Nomor bab
+        let chaptersData = [];
+
+        if (!novelId) {
+            document.getElementById('content').innerHTML = '<p>Novel ID tidak ditemukan.</p>';
+            exit();
+        }
+
+        async function loadChaptersList() {
+            const data = await fetchData(`${API_BASE}/chapters/${novelId}`);
+            if (data && data.result && data.result.chapters) {
+                chaptersData = data.result.chapters;
+                // Jika chapterId tidak diberikan, gunakan bab pertama
+                if (!currentChapterId) {
+                    const firstChapter = chaptersData[0];
+                    if (firstChapter) {
+                        currentChapterId = firstChapter.chapterId;
+                        currentChapterSequel = firstChapter.sequel;
+                        window.history.replaceState({}, '', `?id=${novelId}&chapter=${currentChapterId}&sequel=${currentChapterSequel}`);
+                    }
+                }
+                renderChapterList();
+                loadCurrentChapter();
+            } else {
+                document.getElementById('content').innerHTML = '<p>Daftar bab tidak ditemukan.</p>';
+            }
+        }
+
+        function renderChapterList() {
+            const ul = document.getElementById('chapterListUl');
+            ul.innerHTML = '';
+            chaptersData.forEach(ch => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = `?id=${novelId}&chapter=${ch.chapterId}&sequel=${ch.sequel}`;
+                a.textContent = ch.name;
+                if (ch.chapterId === currentChapterId) {
+                    a.style.fontWeight = 'bold';
+                    a.style.color = 'var(--primary)';
+                }
+                li.appendChild(a);
+                ul.appendChild(li);
+            });
+        }
+
+        async function loadCurrentChapter() {
+            const chapter = chaptersData.find(ch => ch.chapterId === currentChapterId);
+            if (!chapter) {
+                document.getElementById('content').innerHTML = '<p>Bab tidak ditemukan dalam daftar.</p>';
+                return;
+            }
+
+            document.getElementById('chapterTitle').textContent = chapter.name;
+
+            try {
+                const response = await fetch(chapter.url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const text = await response.text();
+                document.getElementById('content').textContent = text;
+            } catch (e) {
+                console.error("Gagal mengambil isi bab:", e);
+                document.getElementById('content').innerHTML = '<p>Gagal memuat isi bab.</p>';
+            }
+
+            // Setel navigasi
+            const prev = chaptersData.find(ch => ch.sequel === currentChapterSequel - 1);
+            const next = chaptersData.find(ch => ch.sequel === currentChapterSequel + 1);
+
+            document.getElementById('prevLink').href = prev ? `?id=${novelId}&chapter=${prev.chapterId}&sequel=${prev.sequel}` : '#';
+            document.getElementById('prevLink').onclick = (e) => !prev && e.preventDefault();
+
+            document.getElementById('nextLink').href = next ? `?id=${novelId}&chapter=${next.chapterId}&sequel=${next.sequel}` : '#';
+            document.getElementById('nextLink').onclick = (e) => !next && e.preventDefault();
+        }
+
+        document.getElementById('listLink').addEventListener('click', (e) => {
+            e.preventDefault();
+            const listDiv = document.getElementById('chapterList');
+            listDiv.style.display = listDiv.style.display === 'none' ? 'block' : 'none';
+        });
+
+        async function fetchData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                return await response.json();
+            } catch (e) {
+                console.error("Fetch error:", e);
+                return null;
+            }
+        }
+
+        window.onload = loadChaptersList;
+
+    </script>
+
+</body>
+</html>
